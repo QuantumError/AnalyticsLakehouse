@@ -1,0 +1,194 @@
+networks:
+  iceberg_net:
+    name: dbt_stack_iceberg_net
+    driver: bridge
+
+volumes:
+      postgres_data:
+services:
+  spark-iceberg:
+      image: tabulario/spark-iceberg
+      container_name: spark-iceberg
+      build: spark/
+      networks:
+        iceberg_net:
+      depends_on:
+        - rest
+        - minio
+      volumes:
+        - ./warehouse:/home/iceberg/warehouse
+        - ./notebooks:/home/iceberg/notebooks
+        - ./data:/home/iceberg/data
+      environment:
+        - AWS_ACCESS_KEY_ID=admin
+        - AWS_SECRET_ACCESS_KEY=password
+        - AWS_REGION=us-east-1
+      ports:
+        - 8888:8888
+        - 8082:8080
+        - 10000:10000
+        - 10001:10001
+
+  rest:
+    image: apache/iceberg-rest-fixture
+    container_name: iceberg-rest
+    networks:
+      iceberg_net:
+    ports:
+      - 8181:8181
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - CATALOG_WAREHOUSE=s3://warehouse/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://minio:9000
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DOMAIN=minio
+    networks:
+      iceberg_net:
+        aliases:
+          - warehouse.minio
+    ports:
+      - 9001:9001
+      - 9000:9000
+    command: ["server", "/data", "--console-address", ":9001"]
+
+  mc:
+    depends_on:
+      - minio
+    image: minio/mc
+    container_name: mc
+    networks:
+      iceberg_net:
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    entrypoint: |
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc rm -r --force minio/warehouse;
+      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc policy set public minio/warehouse;
+      tail -f /dev/null
+      "
+
+  dbt:
+    image: ghcr.io/dbt-labs/dbt-spark:1.8.latest
+    container_name: dbt
+    networks:
+      iceberg_net:
+    depends_on:
+      - spark-iceberg
+    volumes:
+      - ./dbt_project:/usr/app/dbt
+    working_dir: /usr/app/dbt
+    environment:
+      - DBT_PROFILES_DIR=/usr/app/dbt
+    entrypoint: >
+      /bin/sh -c "
+        apt-get update -qq && apt-get install -y --no-install-recommends netcat-openbsd &&
+        pip install --quiet PyHive thrift &&
+        echo 'Waiting for Spark Thrift server on spark-iceberg:10000...' &&
+        sleep 10 &&
+        until nc -z spark-iceberg 10000; do
+          echo '  ...not ready, retrying in 5s' && sleep 5
+        done &&
+        echo 'Thrift server is up — dbt ready' &&
+        tail -f /dev/null
+      "
+
+  dagster:
+    image: python:3.11-slim
+    container_name: dagster
+    networks:
+      iceberg_net:
+    depends_on:
+      - spark-iceberg
+    volumes:
+      - ./dagster_project:/opt/dagster/app
+      - ./dbt_project:/opt/dbt/flights       
+    working_dir: /opt/dagster/app
+    environment:
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - DBT_PROFILES_DIR=/opt/dbt/flights    
+    ports:
+      - 3000:3000
+    entrypoint: >
+      /bin/sh -c "
+        rm -rf /opt/dbt/flights/dbt_packages &&
+        apt-get update -qq && apt-get install -y -qq git &&
+        pip install --quiet dagster dagster-dbt dagster-webserver dagster-spark dagster-dbt dbt-spark[PyHive] &&
+        mkdir -p /opt/dagster/dagster_home &&
+        dagster dev -h 0.0.0.0 -p 3000 -f /opt/dagster/app/definitions.py
+      "
+  postgres:
+      image: postgres:14
+      container_name: superset_db
+      networks:
+        iceberg_net:
+      environment:
+        - POSTGRES_USER=superset
+        - POSTGRES_PASSWORD=superset
+        - POSTGRES_DB=superset
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD", "pg_isready", "-U", "superset"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+
+  redis:
+    image: redis:7
+    container_name: superset_cache
+    networks:
+      iceberg_net:
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  
+  trino:
+    image: trinodb/trino:latest
+    container_name: trino
+    networks:
+      - iceberg_net
+    environment:
+      - TRINO_USER=admin
+      - TRINO_PASSWORD=admin
+    ports:
+      - 8080:8080
+    depends_on:
+      - rest
+      - minio
+    volumes:
+      - ./trino/iceberg.properties:/etc/trino/catalog/iceberg.properties
+      - ./trino/rules.json:/etc/trino/rules.json
+      - ./trino/config.properties:/etc/trino/config.properties
+      - ./trino/access-control.properties:/etc/trino/access-control.properties
+  
+  superset:
+      build:
+        context: ./superset
+      container_name: superset
+      networks:
+        - iceberg_net
+      environment:
+        - ADMIN_USERNAME=admin
+        - ADMIN_EMAIL=admin@superset.com
+        - ADMIN_PASSWORD=admin
+      ports:
+        - 8088:8088

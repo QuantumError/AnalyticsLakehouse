@@ -1,0 +1,12 @@
+iceberg_spark:
+  target: dev
+  outputs:
+    dev:
+      type: spark
+      method: thrift
+      host: spark-iceberg
+      port: 10000
+      user: iceberg
+      schema: default
+      http_scheme: http
+      threads: 4 

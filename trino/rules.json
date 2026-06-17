@@ -1,0 +1,14 @@
+{
+  "catalogs": [
+    { "catalog": "iceberg", "allow": "all" },
+    { "catalog": "system", "allow": "none" }
+  ],
+  "schemas": [
+    { "catalog": "iceberg", "schema": "default", "owner": false },
+    { "catalog": "iceberg", "schema": ".*", "owner": false }
+  ],
+  "tables": [
+    { "catalog": "iceberg", "schema": "default", "table": ".*", "privileges": ["SELECT"] },
+    { "catalog": "iceberg", "schema": ".*", "table": ".*", "privileges": [] }
+  ]
+}
