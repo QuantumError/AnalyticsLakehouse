@@ -1,6 +1,6 @@
 networks:
   iceberg_net:
-    name: dbt_stack_iceberg_net
+    name: lakehouse_iceberg_net
     driver: bridge
 
 volumes:
