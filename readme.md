@@ -17,6 +17,8 @@ To start up the project, you need to open a CLI at the project folder and type '
 
 After that, you can run the script that gets data from the raw .parquet dataset into the Iceberg REST catalog database by running command 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/ingest.py'. Note that this command can be quite CPU heavy, so check that you have high enough CPU and memory limits in Docker.
 
+You can also run a script that will create a partition by day for Iceberg. This can be useful for a lot of ad hoc queries for data upstream. 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/partitions.py' is the command. 
+
 Now that the data is in Iceberg, the next step is to enable workflow orchestration for the lakehouse. This is done via Dagster. Your local Dagster is located at http://localhost:3000 (open that in your browser). Inside the Dagster visual environment, go to the 'Automation' page, then set 'Running' slider on. This will set up the sensors that check for new Iceberg snapshots every 30 seconds and send dbt models downstream. This process is even more CPU heavy, since it sends a dbt star schema downstream, and requires several minutes to run. 
 
 After the first Dagster jobs have finished running, you can go to Superset for data analytics. Your local Superset is at http://localhost:8088. Login with username admin and password admin. Inside Superset, go to 'Settings' -> 'Database Connections'. Click '+Database', select 'Trino' from the list. Paste 'trino://admin@trino:8080/iceberg' into the SQLAlchemy URI text field, test connection and after that you can connect to the database.

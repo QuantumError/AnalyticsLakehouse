@@ -66,7 +66,7 @@ def union_by_name(files: list[str]) -> DataFrame:
 
     return result
 
-def main() -> None:
+def main():
     if not os.path.isdir(DATA_DIR):
         raise FileNotFoundError(
             f"DATA_DIR '{DATA_DIR}' not found. "
@@ -89,9 +89,12 @@ def main() -> None:
 
     spark.sql(f"CREATE NAMESPACE IF NOT EXISTS {CATALOG}.{NAMESPACE}")
     
+    #This is for dbt which uses the default namespace
     spark.sql(f"CREATE NAMESPACE IF NOT EXISTS default")
+    
 
     print(f"\nWriting to {FULL_TABLE}...")
+
     df.writeTo(FULL_TABLE) \
         .tableProperty("write.format.default", "parquet") \
         .using("iceberg") \
