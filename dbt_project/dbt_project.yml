@@ -17,9 +17,4 @@ clean-targets: ["target", "dbt_packages"]
 models:
   my_project:
     +file_format: iceberg
-    staging:
-      +materialized: view
-      +schema: raw
-    marts:
-      +materialized: table
-      +schema: raw 
+    +materialized: table

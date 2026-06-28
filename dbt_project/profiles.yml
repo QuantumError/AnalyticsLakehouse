@@ -9,4 +9,12 @@ iceberg_spark:
       user: iceberg
       schema: default
       http_scheme: http
-      threads: 4 
+      threads: 4
+      connect_timeout: 3600
+      server_side_parameters:
+        "spark.sql.shuffle.partitions": "200"    
+        "spark.executor.memory": "8g"            
+        "spark.driver.memory": "4g"            
+        "spark.network.timeout": "800s"
+        "spark.executor.heartbeatInterval": "60s"
+        "spark.sql.broadcastTimeout": "1200"
