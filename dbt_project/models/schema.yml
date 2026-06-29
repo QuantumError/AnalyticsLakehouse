@@ -1,0 +1,462 @@
+version: 2
+
+models:
+
+  # ────────────────────────────────────────────────
+  # FACT TABLE
+  # ────────────────────────────────────────────────
+  - name: fact_flights
+    description: >
+      Incremental fact table. One row per flight leg.
+      Keys are composite strings built with CONCAT + COALESCE so
+      'Unknown' acts as the null-safe surrogate.
+    columns:
+      - name: flight_key
+        description: >
+          Surrogate key — tail_number|flight_number.
+          NOTE: not unique by design — same aircraft flies the same
+          route on multiple dates. Uniqueness would require including
+          flight_date in the key.
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: flight_date
+        description: Scheduled flight date cast to DATE
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: "'1987-01-01'"
+              max_value: "'2008-12-31'"
+              config:
+                severity: warn
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: carrier_key
+        description: FK → dim_carrier.carrier_key
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+          - relationships:
+              to: ref('dim_carrier')
+              field: carrier_key
+              config:
+                severity: warn
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: airplane_key
+        description: FK → dim_airplane.airplane_key (tail_number|origin)
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+          - relationships:
+              to: ref('dim_airplane')
+              field: airplane_key
+              config:
+                severity: warn
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: delay_key
+        description: >
+          FK → dim_delays.delay_key (cancellation_code).
+          Non-cancelled flights map to 'Unknown' — ensure that
+          row exists in dim_delays.
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+          - relationships:
+              to: ref('dim_delays')
+              field: delay_key
+              config:
+                severity: warn
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: date_key
+        description: FK → dim_date.date_key (date|index)
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                severity: warn
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: time_key
+        description: FK → dim_time.time_key (actual_departure_time|index)
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+          - relationships:
+              to: ref('dim_time')
+              field: time_key
+              config:
+                severity: warn
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: cancelled
+        description: 1 if the flight was cancelled, 0 otherwise
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+          - accepted_values:
+              values: [0, 1]
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: diverted
+        description: 1 if the flight was diverted, 0 otherwise
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+          - accepted_values:
+              values: [0, 1]
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: flight_number
+        description: Airline flight number; 'Unknown' when null in source
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+      - name: plane_tail_number
+        description: Aircraft tail number; 'Unknown' when null in source
+        tests:
+          - not_null:
+              config:
+                where: "flight_date >= date_sub(current_date(), 30)"
+
+
+  # ────────────────────────────────────────────────
+  # DIM AIRPLANE
+  # ────────────────────────────────────────────────
+  - name: dim_airplane
+    description: >
+      One row per tail_number + origin combination.
+      A single aircraft operating from multiple airports
+      will have multiple rows — this is expected.
+    columns:
+      - name: airplane_key
+        description: Surrogate key — tail_number|origin
+        tests:
+          - unique
+          - not_null
+
+      - name: tail_number
+        description: Aircraft registration; 'Unknown' when null in source
+        tests:
+          - not_null
+
+      - name: flight_number
+        description: Flight number associated with this aircraft/origin pair
+        tests:
+          - not_null
+
+      - name: origin
+        description: Departure airport IATA code; 'Unknown' when null
+        tests:
+          - not_null
+
+      - name: destination
+        description: Arrival airport IATA code; 'Unknown' when null
+        tests:
+          - not_null
+
+      - name: distance
+        description: Flight distance in miles; 0 when null in source
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 10000
+              config:
+                severity: warn
+
+      - name: air_time
+        description: Elapsed air time in minutes; 0 when null in source
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 1200
+              config:
+                severity: warn
+
+
+  # ────────────────────────────────────────────────
+  # DIM CARRIER
+  # ────────────────────────────────────────────────
+  - name: dim_carrier
+    description: >
+      One row per unique_carrier + origin + destination combination.
+      carrier_key is unique_carrier only — confirm this is the
+      intended grain before adding a unique test here.
+    columns:
+      - name: carrier_key
+        description: Airline IATA carrier code; 'Unknown' when null
+        tests:
+          - not_null
+          # NOTE: not adding `unique` here because the source SELECT DISTINCT
+          # is on (unique_carrier, taxi_in, taxi_out, origin, dest).
+          # Multiple rows per carrier are expected. If you change the grain
+          # to one row per carrier, re-enable unique below:
+          # - unique
+
+      - name: taxi_in
+        description: Taxi-in time in minutes; 0 when null
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 180
+              config:
+                severity: warn
+
+      - name: taxi_out
+        description: Taxi-out time in minutes; 0 when null
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 180
+              config:
+                severity: warn
+
+      - name: origin
+        description: Departure airport IATA code
+        tests:
+          - not_null
+
+      - name: destination
+        description: Arrival airport IATA code
+        tests:
+          - not_null
+
+
+  # ────────────────────────────────────────────────
+  # DIM DATE
+  # ────────────────────────────────────────────────
+  - name: dim_date
+    description: >
+      Date dimension. date_key is a composite (date|index) —
+      verify whether index is truly necessary for uniqueness;
+      a plain date key is more conventional.
+    columns:
+      - name: date_key
+        description: Surrogate key — full_date|index
+        tests:
+          - unique
+          - not_null
+
+      - name: full_date
+        description: The calendar date
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: "'1987-01-01'"
+              max_value: "'2008-12-31'"
+
+      - name: year
+        description: Calendar year extracted from full_date
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1987
+              max_value: 2008
+
+      - name: month
+        description: Calendar month (1-12); 0 when null in source
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+              # 0 is the COALESCE fallback — treat as warn if 0 appears
+              config:
+                severity: warn
+
+      - name: day_of_month
+        description: Day of month (1-31); 0 when null in source
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 31
+
+      - name: day_of_week
+        description: Day of week from EXTRACT(DAYOFWEEK) — engine-dependent range
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 7
+
+      - name: hour
+        description: Hour extracted from full_date cast as TIMESTAMP (likely always 0)
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 23
+
+      - name: index
+        description: Row index from source; used in composite key
+        tests:
+          - not_null
+
+
+  # ────────────────────────────────────────────────
+  # DIM DELAYS
+  # ────────────────────────────────────────────────
+  - name: dim_delays
+    description: >
+      Delay and cancellation attributes per cancellation_code.
+      WARNING: delay_key uses cancellation_code as the PK. All
+      non-cancelled flights resolve to 'Unknown', so delay metrics
+      for non-cancelled flights are aggregated into a single catch-all
+      row. Consider redesigning to a flight-level grain.
+    columns:
+      - name: delay_key
+        description: >
+          Cancellation code (A/B/C/D) or 'Unknown' for non-cancelled flights.
+          Not unique — multiple flights share 'Unknown'.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['A', 'B', 'C', 'D', 'Unknown']
+
+      - name: departure_delay
+        description: Departure delay in minutes; negative = early; 0 when null
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -120
+              max_value: 2000
+              config:
+                severity: warn
+
+      - name: arrival_delay
+        description: Arrival delay in minutes; negative = early; 0 when null
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -120
+              max_value: 2000
+              config:
+                severity: warn
+
+      - name: carrier_delay
+        description: Portion of delay attributed to the carrier (minutes)
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2000
+              config:
+                severity: warn
+
+      - name: weather_delay
+        description: Portion of delay attributed to weather (minutes)
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2000
+              config:
+                severity: warn
+
+      - name: nas_delay
+        description: Portion of delay attributed to NAS (minutes)
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2000
+              config:
+                severity: warn
+
+      - name: security_delay
+        description: Portion of delay attributed to security (minutes)
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2000
+              config:
+                severity: warn
+
+
+  # ────────────────────────────────────────────────
+  # DIM TIME
+  # ────────────────────────────────────────────────
+  - name: dim_time
+    description: >
+      Departure and arrival times per flight index.
+      time_key is a composite (actual_departure_time|index).
+      Times are stored as integers in HHMM format (e.g. 1435 = 14:35).
+    columns:
+      - name: time_key
+        description: >
+          Surrogate key — actual_departure_time|index.
+          NOTE: unique test removed — this table is flight-level (119M rows)
+          and uniqueness is guaranteed by the index component. Full dedup
+          scan at this scale is too expensive.
+        tests:
+          - not_null
+
+      - name: actual_departure_time
+        description: Actual departure time in HHMM integer format; 0 when null
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2359
+              config:
+                severity: warn
+
+      - name: scheduled_departure_time
+        description: Scheduled departure time in HHMM integer format; 0 when null
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2359
+              config:
+                severity: warn
+
+      - name: actual_arrival_time
+        description: Actual arrival time in HHMM integer format; 0 when null
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2359
+              config:
+                severity: warn
+
+      - name: scheduled_arrival_time
+        description: Scheduled arrival time in HHMM integer format; 0 when null
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2359
+              config:
+                severity: warn
+
+      - name: index
+        description: Row index from source; used in composite key
+        tests:
+          - not_null

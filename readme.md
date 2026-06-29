@@ -13,7 +13,7 @@ You should install the dataset locally and extract it into the /data subfolder i
 
 Other installations are done via the docker-compose file. 
 
-To start up the project, you need to open a CLI at the project folder and type 'docker-compose up'. That will start all the necessary services. 
+To start up the project, you need to open a CLI at the project folder and type 'docker-compose up'. That will start all the necessary services. If you have issues starting the Dagster service again, it's recommended to restart your computer to clear network cache. 
 
 After that, you can run the script that gets data from the raw .parquet dataset into the Iceberg REST catalog database by running command 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/ingest.py'. Note that this command can be quite CPU heavy, so check that you have high enough CPU and memory limits in Docker.
 

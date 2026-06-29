@@ -7,9 +7,10 @@ WITH source_data AS (
 SELECT DISTINCT
     CONCAT(COALESCE(plane_tail_number, 'Unknown'), '|', COALESCE(origin, 'Unknown')) AS airplane_key,
     COALESCE(plane_tail_number, 'Unknown') AS tail_number,
-    COALESCE(flight_number, 'Unknown')     AS flight_number,
+    MAX(COALESCE(flight_number, 'Unknown')) AS flight_number,
     COALESCE(origin, 'Unknown')            AS origin,
-    COALESCE(dest, 'Unknown')              AS destination,
-    COALESCE(distance, 0)                  AS distance,
-    COALESCE(air_time, 0)                  AS air_time
+    MAX(COALESCE(dest, 'Unknown'))         AS destination,
+    MAX(COALESCE(distance, 0))             AS distance,
+    MAX(COALESCE(air_time, 0))             AS air_time
 FROM source_data
+GROUP BY plane_tail_number, origin

@@ -80,6 +80,30 @@ def run_fact_flights(context: OpExecutionContext) -> None:
     context.log.info("fact_flights complete")
 
 # ---------------------------------------------------------------------------
+# Tests — run after fact_flights completes
+# ---------------------------------------------------------------------------
+
+ALL_MODELS = [
+    "dim_airplane",
+    "dim_date",
+    "dim_carrier",
+    "dim_time",
+    "dim_delays",
+    "fact_flights",
+]
+
+@op(
+    required_resource_keys={"dbt"},
+    config_schema={"snapshot_id": int, "snapshot_ts": str},
+    ins={"after_fact_flights": In(Nothing)},
+)
+def run_dbt_tests(context: OpExecutionContext) -> None:
+    snapshot_ts = context.op_config["snapshot_ts"]
+    context.log.info("Running dbt tests for all models")
+    context.resources.dbt.test_models(ALL_MODELS, vars={"snapshot_ts": snapshot_ts})
+    context.log.info("dbt tests complete")
+
+# ---------------------------------------------------------------------------
 # Job — run dim jobs in parallel
 # ---------------------------------------------------------------------------
 
@@ -104,7 +128,10 @@ def run_fact_flights(context: OpExecutionContext) -> None:
             },
             "run_dim_delays": {
                 "config": {"snapshot_id": 0, "snapshot_ts": "1970_01_01"}
-            }
+            },
+            "run_dbt_tests": {
+                "config": {"snapshot_id": 0, "snapshot_ts": "1970_01_01"}
+            },
         }
     }
 )
@@ -116,10 +143,12 @@ def on_new_snapshot_job():
     time = run_dim_time()
     delays = run_dim_delays()
     
-    run_fact_flights(
+    fact = run_fact_flights(
         after_airplane=airplane,
         after_date=date,
         after_carrier=carrier,
         after_time=time,
         after_delays=delays,
     )
+
+    run_dbt_tests(after_fact_flights=fact)

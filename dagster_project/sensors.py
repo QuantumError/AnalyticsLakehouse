@@ -50,6 +50,7 @@ def iceberg_snapshot_sensor(context: SensorEvaluationContext):
                             "run_dim_carrier":  {"config": op_config},
                             "run_dim_time":     {"config": op_config},
                             "run_dim_delays":   {"config": op_config},
+                            "run_dbt_tests":    {"config": op_config},
                         }
                     },
                     tags={"namespace": namespace, "table": table},

@@ -99,6 +99,17 @@ class DbtCustomResource(ConfigurableResource):
             cmd.append("--full-refresh")
         self._exec(cmd)
 
+    def test_models(self,
+            models: list[str] | None = None,
+            vars: dict | None = None,
+            threads: int = 2,
+        ) -> None:
+            cmd = self._base_cmd() + ["test"] + self._subcommand_flags(vars=vars)
+            cmd += ["--threads", str(threads)]
+            if models:
+                cmd += ["--select", " ".join(models)]
+            self._exec(cmd)
+
     def _exec(self, cmd: list[str]) -> None:
         result = subprocess.run(
             cmd,
