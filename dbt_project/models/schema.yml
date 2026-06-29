@@ -209,11 +209,6 @@ models:
         description: Airline IATA carrier code; 'Unknown' when null
         tests:
           - not_null
-          # NOTE: not adding `unique` here because the source SELECT DISTINCT
-          # is on (unique_carrier, taxi_in, taxi_out, origin, dest).
-          # Multiple rows per carrier are expected. If you change the grain
-          # to one row per carrier, re-enable unique below:
-          # - unique
 
       - name: taxi_in
         description: Taxi-in time in minutes; 0 when null
@@ -283,7 +278,6 @@ models:
           - not_null
           - accepted_values:
               values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-              # 0 is the COALESCE fallback — treat as warn if 0 appears
               config:
                 severity: warn
 
