@@ -14,7 +14,7 @@ indexed AS (
     FROM source_data
 )
 SELECT
-    CONCAT(date, '|', index)                             AS date_key,
+    CONCAT(COALESCE(date, "YYMMDD"), '|', COALESCE(index, 0))                             AS date_key,
     CAST(date AS DATE)                                   AS full_date,
     EXTRACT(YEAR FROM CAST(date AS DATE))                AS year,
     COALESCE(month, 0)                                   AS month,
