@@ -43,6 +43,12 @@ The architecture is explained in this visualization:
 
 ![Architecture graph](images/architecture.png)
 
-# Conclusions
+# Conclusion
 
-The pipeline/data platform here could be seen as an example of modern analytics engineering. The main point of such a pipeline is to get raw data into a data warehouse/lake/lakehouse, then send it downstream for analytics. 
+The pipeline/data platform here could be seen as an example of modern analytics engineering. The main point of such a pipeline is to get raw data into a data warehouse/lake/lakehouse, then send it downstream for analytics. The special functionality of this lakehouse is the Dagster orchestration via Iceberg snapshots. This allows for a fluid analytics pipeline where you can access new data from every new snapshot. The kind of architecture used here can be scaled up to real time and larger datasets with Flink, Kafka and cloud vendors (like Databricks). 
+
+The main point is to use the three part architecture (data upstream/storage -> orchestration -> downstream/analytics). The tools used for each part can be changed depending on what the goal of the pipeline is, but secure, modern and flexible tools like Iceberg and Dagster always make a difference. 
+
+## Applications
+
+The pipeline here can be applied to different uses cases, especially in business and logistics, such as e-commerce, sales management, transport logistics, etc.. The flight management pipeline here in terms of analytics is very barebones, as the main focus has been on the choice of tools and the platform architecture. Most production ready pipelines would feature much more advanced ETL/ELT, upstream queries and data analytics. 
