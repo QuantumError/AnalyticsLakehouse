@@ -27,7 +27,7 @@ You can also run a script that will create a partition by day for Iceberg. This 
 
 Now that the data is in Iceberg, the next step is to enable workflow orchestration for the lakehouse. This is done via Dagster. Your local Dagster is located at http://localhost:3000 (open that in your browser). Inside the Dagster visual environment, go to the 'Automation' page, then set 'Running' slider on. This will set up the sensors that check for new Iceberg snapshots every 30 seconds and send dbt models downstream. This process is even more CPU heavy, since it sends a dbt star schema downstream, and requires several minutes to run. 
 
-The dbt star schema has been optimized to Iceberg so that it should run in about 10 minutes. While that might seem like a long time, it's still much better than if the tables used standard surrogate keys since the table features around 119m rows. With the data quality tests the run time should be around 20 minutes. The data quality tests ensure that all the data is to ensure that all rows are within valid ranges and that there are no data leakages. 
+The Dagster jobs for the dbt star schema and the data quality tests have been optimized to run around 15 minutes. The data quality tests ensure that all the rows are within valid ranges and that there are no data leakages. 
 
 You should now also considering adding or removing new flights to the data table. This can be done via Python scripts 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/add_flight.py' and 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/remove_flight.py'. Both of these scripts will create a new Iceberg snapshot, which the Dagster jobs should be able to detect. These will then create new star schemas downstream. 
 

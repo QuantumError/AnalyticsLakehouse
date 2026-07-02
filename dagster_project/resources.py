@@ -102,7 +102,7 @@ class DbtCustomResource(ConfigurableResource):
     def test_models(self,
             models: list[str] | None = None,
             vars: dict | None = None,
-            threads: int = 2,
+            threads: int = 8,
         ) -> None:
             cmd = self._base_cmd() + ["test"] + self._subcommand_flags(vars=vars)
             cmd += ["--threads", str(threads)]
