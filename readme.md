@@ -10,7 +10,7 @@ I'm a cs bachelors student. As a cs student, it's always fascinating to drive in
 
 I started this project to learn Iceberg and Spark in Docker, but eventually it grew out into a full lakehouse platform. I have learned a great deal building this project, most notably how to work with Docker and different AI/LLM tools for better production and debugging. The project has not been easy to make, and especially trying to understand how tools like dbt and Dagster work takes a lot of time and studying. The AI tools I've used, especially Claude, have been really helpful with both the learning and debugging parts. Without such tools, it would have been near impossible for a cs student like me to build a project like this. However, no part of this project has been written without my personal oversight. Any serious developer/engineer understands that AI is just a tool and cannot be responsible for the major decisions or debugging of a project. 
 
-# Requirements and installations
+# Requirements and instructions
 
 This project requires the use of Docker. You can install Docker at https://docs.docker.com/engine/install/.
 
@@ -29,11 +29,29 @@ Now that the data is in Iceberg, the next step is to enable workflow orchestrati
 
 The Dagster jobs for the dbt star schema and the data quality tests have been optimized to run around 15 minutes. The data quality tests ensure that all the rows are within valid ranges and that there are no data leakages. 
 
-You should now also considering adding or removing new flights to the data table. This can be done via Python scripts 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/add_flight.py' and 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/remove_flight.py'. Both of these scripts will create a new Iceberg snapshot, which the Dagster jobs should be able to detect. These will then create new star schemas downstream. 
+You should now also considering adding or removing new flights to the data table. This can be done via Python scripts 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/add_flight.py' and 'docker exec -it spark-iceberg spark-submit /home/iceberg/notebooks/remove_flight.py'. Both of these scripts will create a new Iceberg snapshot, which the Dagster jobs will be able to detect. These will then create new star schemas downstream when the automation is running. 
 
 After the first Dagster jobs have finished running, you can go to Superset for data analytics. Your local Superset is at http://localhost:8088. Login with username admin and password admin. Inside Superset, go to 'Settings' -> 'Database Connections'. Click '+Database', select 'Trino' from the list. Paste 'trino://admin@trino:8080/iceberg' into the SQLAlchemy URI text field, test connection and after that you can connect to the database.
 
 As you can notice, Trino, and thus Superset users, can only access the 'default' namespace which has the dbt models. This is to ensure that the analysts only get the quality data from the downstream.
+
+# Walktrough
+
+## First, start the Docker compose services.
+
+![Docker](images/docker_save.png)
+
+## Next, get the data into Iceberg
+
+![Spark](images/ingest_save.png)
+
+## Then start Dagster automation
+
+![Dagster](images/dagster_save2.png)
+
+## Then you can visualize the data from the dbt models in Superset
+
+![Superset](images/superset_save.png)
 
 # About the choice of tools
 
