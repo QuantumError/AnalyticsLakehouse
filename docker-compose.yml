@@ -128,7 +128,7 @@ services:
       /bin/sh -c "
         rm -rf /opt/dbt/flights/dbt_packages &&
         apt-get update -qq && apt-get install -y -qq git &&
-        pip install --quiet dagster dagster-dbt dagster-webserver dagster-spark dagster-dbt dbt-spark[PyHive] &&
+        pip install --quiet dagster dagster-dbt dagster-webserver dagster-spark dbt-spark[PyHive] &&
         mkdir -p /opt/dagster/dagster_home &&
         dagster dev -h 0.0.0.0 -p 3000 -f /opt/dagster/app/definitions.py
       "
