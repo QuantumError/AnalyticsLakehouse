@@ -2,8 +2,7 @@ FROM apache/superset:latest
 
 USER root
 
-RUN pip install psycopg2-binary
-RUN pip install sqlalchemy-trino
+RUN uv pip install --python /app/.venv/bin/python psycopg2-binary sqlalchemy-trino
 
 ENV ADMIN_USERNAME $ADMIN_USERNAME
 ENV ADMIN_EMAIL $ADMIN_EMAIL
