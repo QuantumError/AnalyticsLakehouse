@@ -4,6 +4,8 @@ This project features a local data lakehouse pipeline/platform architecture.
 The project is fully contained within a Docker environment to ensure safe practices and local functionality.
 The goal of the project is to create a scalable, open-source lakehouse pipeline that can function as an alternative to more expensive vendor solutions.
 
+The dataset used features around 119 million rows of data, which makes it an excellent choice for an analytics lakehouse. The project features modern workflow orchestration via Dagster and dbt, and an analytics downstream via Trino and Superset.
+
 # Background
 
 I'm a cs bachelors student. As a cs student, it's always fascinating to drive into new topics, areas and test out tools you haven't had the chance to at your formal studies. This project is such a case. It's been the largest cs project I have done in my entire studying+hobbyist career, and has taken many months and hundreds of hours of work and debugging.
@@ -15,7 +17,7 @@ I started this project to learn Iceberg and Spark in Docker, but eventually it g
 This project requires the use of Docker. You can install Docker at https://docs.docker.com/engine/install/.
 
 The dataset used in this project is found at https://www.kaggle.com/datasets/ahmedelsayedrashad/airline-on-time-performance-data.
-You should install the dataset locally and extract it into the /data subfolder in the project. 
+You should download the dataset locally and extract it into the /data subfolder in the project. 
 
 Other installations are done via the docker-compose file. 
 
