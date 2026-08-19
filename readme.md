@@ -37,7 +37,7 @@ After the first Dagster jobs have finished running, you can go to Superset for d
 
 As you can notice, Trino, and thus Superset users, can only access the 'default' namespace which has the dbt models. This is to ensure that the analysts only get the quality data from the downstream.
 
-# Walktrough
+# Walkthrough
 
 ## First, start the Docker compose services.
 
@@ -78,4 +78,4 @@ The main point is to use the three part architecture (data upstream/storage -> o
 
 ## Applications
 
-The pipeline here can be applied to different uses cases, especially in business and logistics, such as e-commerce, sales management, transport logistics, etc.. The flight management pipeline here in terms of analytics is very barebones, as the main focus has been on the choice of tools and the platform architecture. Most production ready pipelines would feature much more advanced ETL/ELT, upstream queries and data analytics. 
+The pipeline here can be applied to different uses cases, especially in business and logistics, such as e-commerce, sales management, transport logistics, etc.. The flight management pipeline here in terms of analytics is very bare-bones, as the main focus has been on the choice of tools and the platform architecture. Most production ready pipelines would feature much more advanced ETL/ELT, upstream queries and data analytics. 
