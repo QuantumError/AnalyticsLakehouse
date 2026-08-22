@@ -6,6 +6,20 @@ The goal of the project is to create a scalable, open-source lakehouse pipeline 
 
 The dataset used features around 119 million rows of data, which makes it an excellent choice for an analytics lakehouse. The project features modern workflow orchestration via Dagster and dbt, and an analytics downstream via Trino and Superset.
 
+# About the choice of tools
+
+While a lot of modern data engineering is very cloud heavy, utilizing tools like Databricks, AWS, Azure etc. has it's downsides. One of them is customizability. Many vendors offer 'one size fits all' solutions that make it hard to work with edge cases and smaller, local, ecosystems. However, it's entirely possible to replicate many of the functionalities that cloud environments can offer. The main drawback is often cost of computation, especially when working with large - big data. But that problem can also be solved using smart distributed and parallel computing. 
+
+Iceberg has become a big name in open table format analytics. One of the main reasons Iceberg has become so popular, and why it is used here, is the time travel and snapshot functionality. Every time changes at the REST catalog level are made (such as deleting a table), a new snapshot is created that includes the timestamp, id, etc.. It's possible to query from past snapshots, which makes certain operations much more accessible.
+
+This project uses Trino because it's a great open-source query engine that has a solid Iceberg connector and Superset supports it. Trino is also great for ad hoc queries if you wish to perform those on the star schemas. 
+
+The obvious downside of using a local platform like this is speed. It takes a lot of CPU power to do the computations for even this medium size dataset, so that's where cloud vendors still win. But it's an example that open-source, local platforms can provide the same functionalities as cloud vendors. 
+
+The architecture is explained in this visualization:
+
+![Architecture graph](images/architecture.png)
+
 # Background
 
 I'm a cs bachelors student. As a cs student, it's always fascinating to drive into new topics, areas and test out tools you haven't had the chance to at your formal studies. This project is such a case. It's been the largest cs project I have done in my entire studying+hobbyist career, and has taken many months and hundreds of hours of work and debugging.
@@ -54,20 +68,6 @@ As you can notice, Trino, and thus Superset users, can only access the 'default'
 ## Then you can visualize the data from the dbt models in Superset
 
 ![Superset](images/superset_save.png)
-
-# About the choice of tools
-
-While a lot of modern data engineering is very cloud heavy, utilizing tools like Databricks, AWS, Azure etc. has it's downsides. One of them is customizability. Many vendors offer 'one size fits all' solutions that make it hard to work with edge cases and smaller, local, ecosystems. However, it's entirely possible to replicate many of the functionalities that cloud environments can offer. The main drawback is often cost of computation, especially when working with large - big data. But that problem can also be solved using smart distributed and parallel computing. 
-
-Iceberg has become a big name in open table format analytics. One of the main reasons Iceberg has become so popular, and why it is used here, is the time travel and snapshot functionality. Every time changes at the REST catalog level are made (such as deleting a table), a new snapshot is created that includes the timestamp, id, etc.. It's possible to query from past snapshots, which makes certain operations much more accessible.
-
-This project uses Trino because it's a great open-source query engine that has a solid Iceberg connector and Superset supports it. Trino is also great for ad hoc queries if you wish to perform those on the star schemas. 
-
-The obvious downside of using a local platform like this is speed. It takes a lot of CPU power to do the computations for even this medium size dataset, so that's where cloud vendors still win. But it's an example that open-source, local platforms can provide the same functionalities as cloud vendors. 
-
-The architecture is explained in this visualization:
-
-![Architecture graph](images/architecture.png)
 
 
 # Conclusion
