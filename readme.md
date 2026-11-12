@@ -22,7 +22,7 @@ The architecture is explained in this visualization:
 
 # Background
 
-I'm a cs bachelors student. As a cs student, it's always fascinating to drive into new topics, areas and test out tools you haven't had the chance to at your formal studies. This project is such a case. It's been the largest cs project I have done in my entire studying+hobbyist career, and has taken many months and hundreds of hours of work and debugging.
+I'm a computer science student. As a student, it's always fascinating to drive into new topics, areas and test out tools you haven't had the chance to at your formal studies. This project is such a case. It's been the largest cs project I have done in my entire studying+hobbyist career, and has taken many months and hundreds of hours of work and debugging.
 
 I started this project to learn Iceberg and Spark in Docker, but eventually it grew out into a full lakehouse platform. I have learned a great deal building this project, most notably how to work with Docker and different AI/LLM tools for better production and debugging. The project has not been easy to make, and especially trying to understand how tools like dbt and Dagster work takes a lot of time and studying. The AI tools I've used, especially Claude, have been really helpful with both the learning and debugging parts. Without such tools, it would have been near impossible for a cs student like me to build a project like this. However, no part of this project has been written without my personal oversight. Any serious developer/engineer understands that AI is just a tool and cannot be responsible for the major decisions or debugging of a project. 
 
